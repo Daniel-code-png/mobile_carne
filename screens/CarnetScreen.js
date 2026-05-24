@@ -108,6 +108,11 @@ const CarnetScreen = ({ navigation }) => {
                 <Text style={styles.decoration}>{t.decoration}</Text>
               )}
 
+              <View style={styles.cardIdHeader}>
+                <Text style={[styles.cardIdTitle, { color: t.colors.text }]}>CARNÉ UNIVERSITARIO</Text>
+                <Text style={[styles.cardIdSubtitle, { color: t.colors.accent }]}>Documento digital oficial</Text>
+              </View>
+
               {/* Header del carné */}
               <View style={styles.cardHeader}>
                 <Text style={styles.cardHeaderEmoji}>
@@ -208,19 +213,32 @@ const CarnetScreen = ({ navigation }) => {
             </LinearGradient>
           </View>
 
-          {/* ── Selector de temas ── */}
-          <TouchableOpacity
-            style={styles.themeToggle}
-            onPress={() => setShowThemes(true)}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.themeToggleText, { color: t.colors.text }]}>
-              🎨 Personalizar tema
-            </Text>
-            <Text style={[styles.themeToggleValue, { color: t.colors.accent }]}>
-              {t.emoji} {t.label} ›
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.actionRow}>
+            <TouchableOpacity
+              style={[
+                styles.squareButton,
+                { backgroundColor: t.colors.button.background, borderColor: t.colors.cardBorder },
+              ]}
+              onPress={() => navigation.navigate('Loans')}
+              activeOpacity={0.85}
+            >
+              <Text style={[styles.squareButtonTitle, { color: t.colors.text }]}>📦 Préstamos</Text>
+              <Text style={[styles.squareButtonSubtitle, { color: t.colors.textSoft }]}>Ver mis préstamos</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.squareButton,
+                { backgroundColor: t.colors.accent, borderColor: t.colors.accent },
+              ]}
+              onPress={() => setShowThemes(true)}
+              activeOpacity={0.85}
+            >
+              <Text style={[styles.squareButtonTitle, { color: t.colors.button.text }]}>🎨 Tema</Text>
+              <Text style={[styles.squareButtonSubtitle, { color: t.colors.button.text }]}>Personalizar</Text>
+            </TouchableOpacity>
+          </View>
+
+
 
         </ScrollView>
       </SafeAreaView>
@@ -322,44 +340,43 @@ const styles = StyleSheet.create({
   logoutText: { fontSize: 13 },
 
   // Card
-  card: { overflow: 'hidden', marginBottom: 16, elevation: 8, shadowColor: '#000', shadowOpacity: 0.4, shadowRadius: 16, shadowOffset: { width: 0, height: 8 } },
-  cardGradient: { padding: 18, position: 'relative' },
-  decoration: { position: 'absolute', top: 10, right: 14, fontSize: 28, opacity: 0.25 },
+  card: { position: 'relative', overflow: 'hidden', marginBottom: 20, elevation: 8, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 18, shadowOffset: { width: 0, height: 10 } },
+  cardGradient: { padding: 22, position: 'relative', backgroundColor: 'transparent' },
+  decoration: { position: 'absolute', top: 12, right: 16, fontSize: 28, opacity: 0.18 },
+  cardIdHeader: { marginBottom: 16, paddingRight: 8 },
+  cardIdTitle: { fontSize: 11, letterSpacing: 1.8, fontWeight: '700', textTransform: 'uppercase' },
+  cardIdSubtitle: { fontSize: 10, marginTop: 4, letterSpacing: 0.8 },
 
-  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
   cardHeaderEmoji: { fontSize: 22 },
   cardHeaderTitle: { fontSize: 10, fontWeight: '700', letterSpacing: 1.5 },
   cardHeaderSub: { fontSize: 10, marginTop: 2 },
 
-  divider: { height: 1, opacity: 0.4, marginVertical: 14 },
+  divider: { height: 1, opacity: 0.3, marginVertical: 14 },
 
-  profileRow: { flexDirection: 'row', gap: 14, marginBottom: 4 },
-  photoContainer: { width: 90, height: 104, borderWidth: 2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  profileRow: { flexDirection: 'row', gap: 18, marginBottom: 8 },
+  photoContainer: { width: 112, height: 148, borderWidth: 2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   photo: { width: '100%', height: '100%' },
-  photoFallback: { fontSize: 40 },
+  photoFallback: { fontSize: 46 },
 
   profileInfo: { flex: 1, paddingTop: 2 },
-  name: { fontSize: 17, fontWeight: '700', lineHeight: 22, marginBottom: 4 },
+  name: { fontSize: 18, fontWeight: '700', lineHeight: 24, marginBottom: 4 },
   career: { fontSize: 12, fontStyle: 'italic', marginTop: 6, lineHeight: 18 },
 
-  dataRow: { flexDirection: 'row', gap: 12, marginBottom: 10, alignItems: 'flex-start' },
+  dataRow: { flexDirection: 'row', gap: 12, marginBottom: 10, alignItems: 'flex-start', padding: 12, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.08)' },
   dataIcon: { fontSize: 14, marginTop: 2 },
   dataLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 0.8 },
   dataValue: { fontSize: 13, marginTop: 2 },
 
-  qrRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  qrRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 },
   qrSub: { fontSize: 11, marginTop: 2 },
-  qrButton: { paddingVertical: 8, paddingHorizontal: 16 },
+  qrButton: { paddingVertical: 10, paddingHorizontal: 18, borderRadius: 16 },
   qrButtonText: { fontSize: 13, fontWeight: '700' },
 
-  // Theme toggle
-  themeToggle: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)', borderRadius: 10, padding: 14,
-  },
-  themeToggleText: { fontSize: 14 },
-  themeToggleValue: { fontSize: 13, fontWeight: '600' },
+  actionRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginTop: 18 },
+  squareButton: { flex: 1, minHeight: 120, borderWidth: 1, borderRadius: 18, padding: 16, justifyContent: 'center', alignItems: 'flex-start' },
+  squareButtonTitle: { fontSize: 15, fontWeight: '700', marginBottom: 8 },
+  squareButtonSubtitle: { fontSize: 12, lineHeight: 18 },
 
   // Modal QR
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'center', alignItems: 'center', padding: 24 },

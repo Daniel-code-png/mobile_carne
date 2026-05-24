@@ -9,6 +9,7 @@ import { AppProvider, useApp } from './context/AppContext';
 import LoginScreen from './screens/LoginScreen';
 import ChangePasswordScreen from './screens/ChangePasswordScreen';
 import CarnetScreen from './screens/CarnetScreen';
+import LoansScreen from './screens/LoansScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -39,7 +40,10 @@ const AppNavigator = () => {
             options={{ gestureEnabled: false }}
           />
         ) : (
-          <Stack.Screen name="Carnet" component={CarnetScreen} />
+          <>
+            <Stack.Screen name="Carnet" component={CarnetScreen} />
+            <Stack.Screen name="Loans" component={LoansScreen} />
+          </>
         )}
       </Stack.Navigator>
     </NavigationContainer>
