@@ -77,8 +77,8 @@ const ChangePasswordScreen = ({ navigation }) => {
     try {
       await authService.changePassword(newPassword);
 
-      // Marcar en el contexto que ya completó el primer login
-      updateUser({ firstLogin: false });
+      // Marcar en el contexto y persistir el cambio para que no vuelva a abrir este paso
+      await updateUser({ firstLogin: false });
 
       // El navegador se actualizará automáticamente
     } catch (error) {

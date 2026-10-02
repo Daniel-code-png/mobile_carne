@@ -15,7 +15,7 @@ import QRCodeSVG from 'react-native-qrcode-svg';
  * @param {object}  theme      - Tema visual activo
  * @param {number}  size       - Tamaño en px (default: 150)
  */
-const QRCode = ({ sessionId, theme, size = 150 }) => {
+const QRCode = ({ sessionId, userId, theme, size = 150 }) => {
   if (!sessionId) {
     return (
       <View style={[styles.container, { borderRadius: theme.shape.borderRadius, justifyContent: 'center', alignItems: 'center' }]}>
@@ -26,10 +26,8 @@ const QRCode = ({ sessionId, theme, size = 150 }) => {
     );
   }
 
-  // El valor del QR incluye el sessionId para que sea escaneable
-  // En fase 2 (control de acceso), el scanner validará este sessionId
-  // contra el JWT activo del usuario
   const qrValue = JSON.stringify({
+    id: userId,
     sessionId,
     type: 'carnet_digital',
     version: 1,

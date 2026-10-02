@@ -30,7 +30,8 @@ export const AppProvider = ({ children }) => {
         setToken(savedToken);
       }
       if (savedUser) {
-        setUser(JSON.parse(savedUser));
+        const parsedUser = JSON.parse(savedUser);
+        setUser({ ...parsedUser, canScan: Boolean(parsedUser.canScan) });
       }
       if (savedSessionId) {
         setSessionId(savedSessionId);
@@ -49,22 +50,27 @@ export const AppProvider = ({ children }) => {
    * Ejecutar al hacer login exitoso.
    * Recibe el objeto completo de respuesta del backend.
    */
-  const login = useCallback(async ({ token, user, sessionId }) => {
+  const login = useCallback(async ({ token, user, sessionId, canScan }) => {
+    const normalizedUser = { ...user, canScan: Boolean(canScan ?? user?.canScan) };
     await AsyncStorage.setItem('jwt_token', token);
-    await AsyncStorage.setItem('user', JSON.stringify(user));
+    await AsyncStorage.setItem('user', JSON.stringify(normalizedUser));
     await AsyncStorage.setItem('sessionId', sessionId);
-    await AsyncStorage.setItem('user_theme', user.theme || 'institucional');
+    await AsyncStorage.setItem('user_theme', normalizedUser.theme || 'institucional');
     setToken(token);
-    setUser(user);
+    setUser(normalizedUser);
     setSessionId(sessionId);
-    setThemeState(getTheme(user.theme));
+    setThemeState(getTheme(normalizedUser.theme));
   }, []);
 
   /**
    * Actualizar datos del usuario (por ejemplo, después de cambio de contraseña).
    */
-  const updateUser = useCallback((updatedFields) => {
-    setUser((prev) => ({ ...prev, ...updatedFields }));
+  const updateUser = useCallback(async (updatedFields) => {
+    setUser((prev) => {
+      const nextUser = { ...(prev || {}), ...updatedFields };
+      AsyncStorage.setItem('user', JSON.stringify(nextUser)).catch(() => {});
+      return nextUser;
+    });
   }, []);
 
   /**
@@ -80,7 +86,12 @@ export const AppProvider = ({ children }) => {
    * Cerrar sesión: limpiar estado y AsyncStorage.
    */
   const logout = useCallback(async () => {
-    await AsyncStorage.multiRemove(['jwt_token', 'user', 'sessionId', 'user_theme']);
+    try {
+      await AsyncStorage.multiRemove(['jwt_token', 'user', 'sessionId', 'user_theme']);
+    } catch (e) {
+      console.warn('Error limpiando sesión:', e);
+    }
+
     setUser(null);
     setToken(null);
     setSessionId(null);

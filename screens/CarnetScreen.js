@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -10,12 +10,14 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useApp } from '../context/AppContext';
 import { getAllThemes } from '../themes';
 import QRCode from '../components/QRCode';
 import RoleBadge from '../components/RoleBadge';
 import userService from '../services/userService';
+import accessService from '../services/accessService';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 /**
@@ -30,10 +32,49 @@ const CarnetScreen = ({ navigation }) => {
   const { user, sessionId, theme, logout, updateTheme } = useApp();
   const [showQR, setShowQR] = useState(false);
   const [showThemes, setShowThemes] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
   const [savingTheme, setSavingTheme] = useState(false);
   const [imgError, setImgError] = useState(false);
+  const [scanLock, setScanLock] = useState(false);
+  const [permission, requestPermission] = useCameraPermissions();
 
   const allThemes = getAllThemes();
+  const canScan = Boolean(user?.canScan || ['guardia', 'administrativo', 'admin', 'superadmin', 'rector', 'vicerrector', 'decano', 'coordinador', 'secretaria', 'biblioteca', 'sistemas', 'mantenimiento'].includes(user?.role));
+
+  useEffect(() => {
+    if (!showScanner) {
+      setScanLock(false);
+    }
+  }, [showScanner]);
+
+  const handleBarcodeScanned = async ({ data }) => {
+    if (scanLock || !data) return;
+    setScanLock(true);
+
+    try {
+      const result = await accessService.scan(data, null, 'Principal');
+      Alert.alert('Acceso registrado', result.message || 'Registro guardado');
+      setShowScanner(false);
+    } catch (error) {
+      Alert.alert('Error de acceso', error.message || 'No se pudo registrar la entrada/salida');
+      setScanLock(false);
+    }
+  };
+
+  const openScanner = async () => {
+    if (!canScan) {
+      Alert.alert('Sin permiso', 'Este rol no tiene acceso al escáner QR.');
+      return;
+    }
+
+    const currentPermission = permission ?? (await requestPermission());
+    if (!currentPermission?.granted) {
+      Alert.alert('Permiso requerido', 'Necesitas permitir el acceso a la cámara para escanear QR.');
+      return;
+    }
+
+    setShowScanner(true);
+  };
 
   const handleThemeChange = async (themeId) => {
     setShowThemes(false);
@@ -57,7 +98,10 @@ const CarnetScreen = ({ navigation }) => {
         style: 'destructive',
         onPress: async () => {
           await logout();
-          // El navegador se actualizará automáticamente
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Login' }],
+          });
         },
       },
     ]);
@@ -120,7 +164,7 @@ const CarnetScreen = ({ navigation }) => {
                 </Text>
                 <View>
                   <Text style={[styles.cardHeaderTitle, { color: t.colors.accent }]}>
-                    UNIVERSIDAD INSTITUCIONAL
+                    {user?.university?.name ? user.university.name.toUpperCase() : 'UNIVERSIDAD INSTITUCIONAL'}
                   </Text>
                   <Text style={[styles.cardHeaderSub, { color: t.colors.textSoft }]}>
                     Sistema de Identificación Digital
@@ -238,8 +282,23 @@ const CarnetScreen = ({ navigation }) => {
             </TouchableOpacity>
           </View>
 
-
-
+          {canScan && (
+            <TouchableOpacity
+              style={[
+                styles.scanButton,
+                {
+                  backgroundColor: t.colors.button.background,
+                  borderRadius: t.shape.borderRadius,
+                  shadowColor: t.colors.accent,
+                },
+              ]}
+              onPress={openScanner}
+              activeOpacity={0.9}
+            >
+              <Text style={styles.scanButtonIcon}>📷</Text>
+              <Text style={[styles.scanButtonText, { color: t.colors.button.text }]}>Escanear entrada/salida</Text>
+            </TouchableOpacity>
+          )}
         </ScrollView>
       </SafeAreaView>
 
@@ -265,7 +324,7 @@ const CarnetScreen = ({ navigation }) => {
               </Text>
 
               <View style={[styles.qrWrapper, { backgroundColor: t.colors.qrBackground, borderRadius: t.shape.borderRadius }]}>
-                <QRCode sessionId={sessionId} theme={t} size={200} />
+                <QRCode sessionId={sessionId} userId={user?._id || user?.id} theme={t} size={200} />
               </View>
 
               <Text style={[styles.modalNote, { color: t.colors.accent }]}>
@@ -324,6 +383,44 @@ const CarnetScreen = ({ navigation }) => {
           </View>
         </View>
       </Modal>
+
+      <Modal visible={showScanner} transparent={false} animationType="slide" onRequestClose={() => setShowScanner(false)}>
+        <View style={[styles.scannerContainer, { backgroundColor: t.colors.background[0] || t.colors.background }]}>
+          {permission?.granted ? (
+            <CameraView
+              style={styles.scannerCamera}
+              facing="back"
+              barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+              onBarcodeScanned={handleBarcodeScanned}
+            />
+          ) : (
+            <View style={[styles.scannerFallback, { backgroundColor: t.colors.background[0] || t.colors.background }]}>
+              <Text style={[styles.scannerFallbackText, { color: t.colors.text }]}>Solicitando permiso de cámara...</Text>
+            </View>
+          )}
+
+          <View style={styles.scannerOverlay}>
+            <View style={[styles.scannerHeader, { backgroundColor: 'rgba(255,255,255,0.08)', borderColor: t.colors.cardBorder }]}>
+              <View>
+                <Text style={[styles.scannerEyebrow, { color: t.colors.textSoft }]}>Control de acceso</Text>
+                <Text style={[styles.scannerTitle, { color: t.colors.text }]}>Escanear QR</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setShowScanner(false)}
+                style={[styles.closeScannerButton, { backgroundColor: t.colors.accentSoft }]}
+              >
+                <Text style={[styles.scannerClose, { color: t.colors.accent }]}>Cerrar</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.scannerFrameWrapper}>
+              <View style={[styles.scannerFrame, { borderColor: t.colors.accent, shadowColor: t.colors.accent }]} />
+            </View>
+
+            <Text style={[styles.scannerHint, { color: t.colors.text, backgroundColor: 'rgba(255,255,255,0.08)' }]}>El sistema detecta automáticamente la entrada o salida</Text>
+          </View>
+        </View>
+      </Modal>
     </LinearGradient>
   );
 };
@@ -378,6 +475,23 @@ const styles = StyleSheet.create({
   squareButtonTitle: { fontSize: 15, fontWeight: '700', marginBottom: 8 },
   squareButtonSubtitle: { fontSize: 12, lineHeight: 18 },
 
+  scanButton: {
+    marginTop: 18,
+    marginBottom: 4,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    shadowOpacity: 0.35,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 8,
+  },
+  scanButtonIcon: { fontSize: 20 },
+  scanButtonText: { fontSize: 16, fontWeight: '700' },
+
   // Modal QR
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'center', alignItems: 'center', padding: 24 },
   modalContent: { width: '100%', maxWidth: 340, overflow: 'hidden' },
@@ -407,6 +521,56 @@ const styles = StyleSheet.create({
   themeCheck: { fontSize: 20 },
   cancelButton: { marginTop: 16, alignItems: 'center', paddingVertical: 12 },
   cancelButtonText: { color: 'rgba(255,255,255,0.5)', fontSize: 15 },
+
+  scannerContainer: { flex: 1 },
+  scannerCamera: { flex: 1 },
+  scannerFallback: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  scannerFallbackText: { fontSize: 16, fontWeight: '600' },
+  scannerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'space-between',
+    paddingTop: 52,
+    paddingBottom: 28,
+    paddingHorizontal: 18,
+    backgroundColor: 'rgba(0,0,0,0.22)',
+  },
+  scannerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  scannerEyebrow: { fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 4 },
+  scannerTitle: { fontSize: 18, fontWeight: '700' },
+  closeScannerButton: {
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  scannerClose: { fontSize: 13, fontWeight: '700' },
+  scannerFrameWrapper: { alignItems: 'center', justifyContent: 'center', flex: 1 },
+  scannerFrame: {
+    width: 250,
+    height: 250,
+    borderRadius: 28,
+    borderWidth: 3,
+    backgroundColor: 'transparent',
+    shadowOpacity: 0.5,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  scannerHint: {
+    alignSelf: 'center',
+    marginTop: 8,
+    fontSize: 14,
+    fontWeight: '600',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 999,
+  },
 });
 
 export default CarnetScreen;
